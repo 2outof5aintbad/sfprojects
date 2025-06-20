@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Agentforce: Data Drift</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <style>
+    body { margin: 0; background-color: #111; }
+    canvas { display: block; margin: auto; }
+  </style>
+</head>
+<body>
+<script>
+  const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    backgroundColor: '#1a1a2e',
+    physics: {
+      default: 'arcade',
+      arcade: {
+        gravity: { y: 0 },
+        debug: false
+      }
+    },
+    scene: {
+      preload: preload,
+      create: create,
+      update: update
+    }
+  };
+
+  let player;
+  let cursors;
+  let background;
+  let obstacles;
+  let tasks;
+  let score = 0;
+  let scoreText;
+  let speed = 2;
+
+  const game = new Phaser.Game(config);
+
+  function preload() {
+    this.load.image('agent', 'https://labs.phaser.io/assets/sprites/robot.png');
+    this.load.image('task', 'https://labs.phaser.io/assets/sprites/yellow_ball.png');
+    this.load.image('obstacle', 'https://labs.phaser.io/assets/sprites/red_ball.png');
+    this.load.image('bg', 'https://labs.phaser.io/assets/skies/space3.png');
+  }
+
+  function create() {
+    background = this.add.tileSprite(0, 0, 800, 600, 'bg').setOrigin(0, 0);
+    player = this.physics.add.sprite(100, 300, 'agent').setScale(1.2);
+    player.setCollideWorldBounds(true);
+
+    cursors = this.input.keyboard.createCursorKeys();
+
+    tasks = this.physics.add.group();
+    obstacles = this.physics.add.group();
+
+    this.time.addEvent({
+      delay: 1500,
+      callback: () => {
+        let task = tasks.create(850, Phaser.Math.Between(50, 550), 'task');
+        task.setVelocityX(-200);
+      },
+      loop: true
+    });
+
+    this.time.addEvent({
+      delay: 2500,
+      callback: () => {
+        let obs = obstacles.create(850, Phaser.Math.Between(50, 550), 'obstacle');
+        obs.setVelocityX(-250);
+      },
+      loop: true
+    });
+
+    this.physics.add.overlap(player, tasks, collectTask, null, this);
+    this.physics.add.overlap(player, obstacles, hitObstacle, null, this);
+
+    scoreText = this.add.text(16, 16, 'Score: 0', {
+      fontSize: '20px',
+      fill: '#ffffff'
+    });
+  }
+
+  function update() {
+    background.tilePositionX += speed;
+    player.setVelocityY(0);
+
+    if (cursors.up.isDown) {
+      player.setVelocityY(-200);
+    } else if (cursors.down.isDown) {
+      player.setVelocityY(200);
+    }
+  }
+
+  function collectTask(player, task) {
+    task.destroy();
+    score += 10;
+    scoreText.setText('Score: ' + score);
+  }
+
+  function hitObstacle(player, obstacle) {
+    obstacle.destroy();
+    score -= 20;
+    scoreText.setText('Score: ' + score);
+  }
+</script>
+</body>
+</html>
